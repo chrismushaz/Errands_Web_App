@@ -1,0 +1,261 @@
+{% extends 'base.html' %} {% block title %}{{ errand.title }} - ErrandMate{%
+endblock %} {% block content %}
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-body">
+        <h2 class="card-title">{{ errand.title }}</h2>
+        <div class="mb-3">
+          <span class="badge bg-primary">{{ errand.category.name }}</span>
+          <span class="badge bg-secondary"
+            >{{ errand.get_status_display }}</span
+          >
+        </div>
+        <p class="card-text">{{ errand.description }}</p>
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <h5>Details</h5>
+            <ul class="list-unstyled">
+              <li>
+                <i class="fas fa-map-marker-alt"></i> {{ errand.location }}
+              </li>
+              <li>
+                <i class="fas fa-calendar"></i> {{ errand.preferred_date|date }}
+              </li>
+              <li>
+                <i class="fas fa-clock"></i> {{ errand.preferred_time|time }}
+              </li>
+              <li>
+                <i class="fas fa-dollar-sign"></i> Budget: ${{ errand.budget }}
+              </li>
+            </ul>
+          </div>
+          <div class="col-md-6">
+            <h5>Posted by</h5>
+            <div class="d-flex align-items-center">
+              {% if errand.client.profile_picture %}
+              <img
+                src="{{ errand.client.profile_picture.url }}"
+                alt="Profile Picture"
+                class="rounded-circle me-2"
+                style="width: 50px; height: 50px; object-fit: cover"
+              />
+              {% else %}
+              <i class="fas fa-user-circle fa-3x me-2 text-primary"></i>
+              {% endif %}
+              <div>
+                <h6 class="mb-0">
+                  {{ errand.client.get_full_name|default:errand.client.username
+                  }}
+                </h6>
+                <div class="text-warning">
+                  {% for i in "12345"|make_list %} {% if forloop.counter <=
+                  errand.client.rating %}
+                  <i class="fas fa-star"></i>
+                  {% else %}
+                  <i class="far fa-star"></i>
+                  {% endif %} {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% if user.is_client and errand.client == user %}
+        <div class="btn-group">
+          <a href="{% url 'errand-update' errand.id %}" class="btn btn-primary"
+            >Edit</a
+          >
+          <button
+            type="button"
+            class="btn btn-danger"
+            data-bs-toggle="modal"
+            data-bs-target="#deleteModal"
+          >
+            Delete
+          </button>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if errand.tasker %}
+    <div class="card mt-4">
+      <div class="card-body">
+        <h4 class="card-title">Assigned Tasker</h4>
+        <div class="d-flex align-items-center">
+          {% if errand.tasker.profile_picture %}
+          <img
+            src="{{ errand.tasker.profile_picture.url }}"
+            alt="Profile Picture"
+            class="rounded-circle me-2"
+            style="width: 50px; height: 50px; object-fit: cover"
+          />
+          {% else %}
+          <i class="fas fa-user-circle fa-3x me-2 text-primary"></i>
+          {% endif %}
+          <div>
+            <h5 class="mb-0">
+              {{ errand.tasker.get_full_name|default:errand.tasker.username }}
+            </h5>
+            <div class="text-warning">
+              {% for i in "12345"|make_list %} {% if forloop.counter <=
+              errand.tasker.rating %}
+              <i class="fas fa-star"></i>
+              {% else %}
+              <i class="far fa-star"></i>
+              {% endif %} {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="col-md-4">
+    {% if user.is_tasker and errand.status == 'PENDING' %}
+    <div class="card mb-4">
+      <div class="card-body">
+        <h4 class="card-title">Apply for this Errand</h4>
+        <form method="post" action="{% url 'api:application-list' %}">
+          {% csrf_token %}
+          <input type="hidden" name="errand" value="{{ errand.id }}" />
+          <div class="mb-3">
+            <label for="proposal" class="form-label">Your Proposal</label>
+            <textarea
+              class="form-control"
+              id="proposal"
+              name="proposal"
+              rows="3"
+              required
+            ></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="proposed_budget" class="form-label"
+              >Your Proposed Budget</label
+            >
+            <input
+              type="number"
+              class="form-control"
+              id="proposed_budget"
+              name="proposed_budget"
+              min="0"
+              step="0.01"
+              required
+            />
+          </div>
+          <button type="submit" class="btn btn-primary w-100">
+            Submit Application
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endif %} {% if errand.applications.exists %}
+    <div class="card">
+      <div class="card-body">
+        <h4 class="card-title">Applications</h4>
+        {% for application in errand.applications.all %}
+        <div class="card mb-3">
+          <div class="card-body">
+            <div class="d-flex align-items-center mb-2">
+              {% if application.tasker.profile_picture %}
+              <img
+                src="{{ application.tasker.profile_picture.url }}"
+                alt="Profile Picture"
+                class="rounded-circle me-2"
+                style="width: 40px; height: 40px; object-fit: cover"
+              />
+              {% else %}
+              <i class="fas fa-user-circle fa-2x me-2 text-primary"></i>
+              {% endif %}
+              <div>
+                <h6 class="mb-0">
+                  {{
+                  application.tasker.get_full_name|default:application.tasker.username
+                  }}
+                </h6>
+                <small class="text-muted"
+                  >Applied: {{ application.created_at|date }}</small
+                >
+              </div>
+            </div>
+            <p class="card-text">{{ application.proposal }}</p>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="text-primary"
+                >${{ application.proposed_budget }}</span
+              >
+              {% if user == errand.client and errand.status == 'PENDING' %}
+              <button
+                class="btn btn-success btn-sm"
+                onclick="acceptApplication({{ application.id }})"
+              >
+                Accept
+              </button>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if user.is_client and errand.client == user %}
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Delete Errand</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <p>
+          Are you sure you want to delete this errand? This action cannot be
+          undone.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <form
+          method="post"
+          action="{% url 'errand-delete' errand.id %}"
+          class="d-inline"
+        >
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %} {% endblock %} {% block extra_js %}
+<script>
+  function acceptApplication(applicationId) {
+    if (confirm("Are you sure you want to accept this application?")) {
+      fetch(`/api/errands/applications/${applicationId}/accept/`, {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]")
+            .value,
+        },
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.message) {
+            location.reload();
+          }
+        })
+        .catch((error) => console.error("Error:", error));
+    }
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,22 @@
+# Python
+*.pyc
+__pycache__/
+*.pyo
+
+# Env
+env/
+venv/
+myApp/  # your virtualenv name
+
+# Django
+*.sqlite3
+db.sqlite3
+/media
+/staticfiles
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

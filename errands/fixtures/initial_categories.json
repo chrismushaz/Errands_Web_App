@@ -1,0 +1,57 @@
+[
+    {
+        "model": "errands.category",
+        "pk": 1,
+        "fields": {
+            "name": "Cleaning",
+            "description": "House cleaning, office cleaning, and other cleaning services",
+            "icon": "fa-broom",
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z"
+        }
+    },
+    {
+        "model": "errands.category",
+        "pk": 2,
+        "fields": {
+            "name": "Shopping",
+            "description": "Grocery shopping, retail shopping, and other shopping services",
+            "icon": "fa-shopping-cart",
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z"
+        }
+    },
+    {
+        "model": "errands.category",
+        "pk": 3,
+        "fields": {
+            "name": "Delivery",
+            "description": "Package delivery, food delivery, and other delivery services",
+            "icon": "fa-truck",
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z"
+        }
+    },
+    {
+        "model": "errands.category",
+        "pk": 4,
+        "fields": {
+            "name": "Handyman",
+            "description": "Home repairs, furniture assembly, and other handyman services",
+            "icon": "fa-tools",
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z"
+        }
+    },
+    {
+        "model": "errands.category",
+        "pk": 5,
+        "fields": {
+            "name": "Pet Care",
+            "description": "Pet walking, pet sitting, and other pet care services",
+            "icon": "fa-paw",
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z"
+        }
+    }
+] 

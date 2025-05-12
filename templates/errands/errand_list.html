@@ -1,0 +1,360 @@
+{% extends 'base.html' %}
+
+{% block title %}Browse Errands - ErrandMate{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="display-4 fw-bold mb-4">Find Your Next Errand</h1>
+                <p class="lead mb-4">Browse through available errands or post your own. Connect with trusted taskers and get things done.</p>
+                {% if user.is_authenticated and user.role == 'CLIENT' %}
+                <button class="btn btn-light btn-lg" data-bs-toggle="modal" data-bs-target="#postErrandModal">
+                    <i class="fas fa-plus me-2"></i>Post New Errand
+                </button>
+                {% endif %}
+            </div>
+            <div class="col-lg-4 d-none d-lg-block">
+                <img src="https://illustrations.popsy.co/white/task-list.svg" alt="Errand illustration" class="img-fluid">
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="container">
+    <div class="row">
+        <!-- Filters -->
+        <div class="col-lg-3 mb-4">
+            <div class="card sticky-top" style="top: 2rem;">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filters</h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" action="{% url 'errands:errand_list' %}" id="filterForm">
+                        <div class="mb-3">
+                            <label for="category" class="form-label">Category</label>
+                            <select class="form-select" id="category" name="category">
+                                <option value="">All Categories</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}" {% if selected_category == category.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ category.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="">All Statuses</option>
+                                <option value="PENDING" {% if selected_status == 'PENDING' %}selected{% endif %}>Pending</option>
+                                <option value="ASSIGNED" {% if selected_status == 'ASSIGNED' %}selected{% endif %}>Assigned</option>
+                                <option value="IN_PROGRESS" {% if selected_status == 'IN_PROGRESS' %}selected{% endif %}>In Progress</option>
+                                <option value="COMPLETED" {% if selected_status == 'COMPLETED' %}selected{% endif %}>Completed</option>
+                                <option value="CANCELLED" {% if selected_status == 'CANCELLED' %}selected{% endif %}>Cancelled</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="location" class="form-label">Location</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
+                                <input type="text" class="form-control" id="location" name="location" placeholder="Enter location" value="{{ selected_location }}">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="budget_min" class="form-label">Budget Range</label>
+                            <div class="row">
+                                <div class="col-6">
+                                    <input type="number" class="form-control" id="budget_min" name="budget_min" placeholder="Min" value="{{ request.GET.budget_min }}">
+                                </div>
+                                <div class="col-6">
+                                    <input type="number" class="form-control" id="budget_max" name="budget_max" placeholder="Max" value="{{ request.GET.budget_max }}">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search me-2"></i>Apply Filters
+                        </button>
+                        
+                        <button type="button" class="btn btn-outline-secondary w-100 mt-2" onclick="resetFilters()">
+                            <i class="fas fa-undo me-2"></i>Reset
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Errands List -->
+        <div class="col-lg-9">
+            {% if errands %}
+                <div class="row row-cols-1 row-cols-md-2 g-4">
+                    {% for errand in errands %}
+                    <div class="col">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <h5 class="card-title mb-0">{{ errand.title }}</h5>
+                                    <span class="badge bg-{{ errand.status|lower }}">
+                                        {{ errand.get_status_display }}
+                                    </span>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <span class="badge bg-light text-dark me-2">
+                                        <i class="fas fa-tag me-1"></i>{{ errand.category.name }}
+                                    </span>
+                                    <span class="badge bg-light text-dark">
+                                        <i class="fas fa-dollar-sign me-1"></i>${{ errand.budget }}
+                                    </span>
+                                </div>
+                                
+                                <p class="card-text text-muted mb-3">{{ errand.description|truncatewords:30 }}</p>
+                                
+                                <div class="mb-3">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-map-marker-alt text-primary me-2"></i>
+                                        <span>{{ errand.location }}</span>
+                                    </div>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-calendar text-primary me-2"></i>
+                                        <span>{{ errand.preferred_date|date:"F j, Y" }}</span>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-clock text-primary me-2"></i>
+                                        <span>{{ errand.preferred_time|time:"g:i A" }}</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        <i class="fas fa-user me-1"></i>{{ errand.client.username }}
+                                    </small>
+                                    {% if user.is_authenticated and user.role == 'TASKER' and errand.status == 'PENDING' %}
+                                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#applyModal" data-errand-id="{{ errand.id }}">
+                                        <i class="fas fa-handshake me-1"></i>Apply
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <img src="https://illustrations.popsy.co/gray/searching.svg" alt="No results" style="width: 200px; margin-bottom: 2rem;">
+                    <h3 class="mb-3">No Errands Found</h3>
+                    <p class="text-muted mb-4">Try adjusting your filters or post a new errand if you're a client.</p>
+                    {% if user.is_authenticated and user.role == 'CLIENT' %}
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#postErrandModal">
+                        <i class="fas fa-plus me-2"></i>Post New Errand
+                    </button>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Post Errand Modal -->
+{% if user.is_authenticated and user.role == 'CLIENT' %}
+<div class="modal fade" id="postErrandModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus-circle me-2"></i>Post New Errand
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="postErrandForm" method="post" action="{% url 'api:errand-list' %}">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="title" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="category" class="form-label">Category</label>
+                            <select class="form-select" id="category" name="category" required>
+                                <option value="">Select a category</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="location" class="form-label">Location</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
+                                <input type="text" class="form-control" id="location" name="location" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="budget" class="form-label">Budget ($)</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
+                                <input type="number" class="form-control" id="budget" name="budget" min="0" step="0.01" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="preferred_date" class="form-label">Preferred Date</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                <input type="date" class="form-control" id="preferred_date" name="preferred_date" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="preferred_time" class="form-label">Preferred Time</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-clock"></i></span>
+                                <input type="time" class="form-control" id="preferred_time" name="preferred_time" required>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="postErrandForm" class="btn btn-primary">
+                    <i class="fas fa-paper-plane me-2"></i>Post Errand
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Apply for Errand Modal -->
+{% if user.is_authenticated and user.role == 'TASKER' %}
+<div class="modal fade" id="applyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-handshake me-2"></i>Apply for Errand
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="applyForm" method="post" action="{% url 'api:application-list' %}">
+                    {% csrf_token %}
+                    <input type="hidden" id="errand_id" name="errand" value="">
+                    <div class="mb-3">
+                        <label for="proposal" class="form-label">Your Proposal</label>
+                        <textarea class="form-control" id="proposal" name="proposal" rows="4" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="proposed_budget" class="form-label">Your Proposed Budget ($)</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
+                            <input type="number" class="form-control" id="proposed_budget" name="proposed_budget" min="0" step="0.01" required>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="applyForm" class="btn btn-primary">
+                    <i class="fas fa-paper-plane me-2"></i>Submit Application
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Set the errand ID when the apply modal is opened
+    document.addEventListener('DOMContentLoaded', function() {
+        const applyModal = document.getElementById('applyModal');
+        if (applyModal) {
+            applyModal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                const errandId = button.getAttribute('data-errand-id');
+                document.getElementById('errand_id').value = errandId;
+            });
+        }
+    });
+
+    // Reset filters
+    function resetFilters() {
+        document.getElementById('filterForm').reset();
+        window.location.href = "{% url 'errands:errand_list' %}";
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const applyForm = document.getElementById('applyForm');
+        const errandIdInput = document.getElementById('errand_id');
+        
+        // Handle apply button clicks
+        document.querySelectorAll('.apply-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const errandId = this.dataset.errandId;
+                errandIdInput.value = errandId;
+            });
+        });
+
+        // Handle form submission
+        applyForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = {
+                errand: formData.get('errand'),
+                proposal: formData.get('proposal'),
+                proposed_budget: formData.get('proposed_budget')
+            };
+
+            try {
+                const response = await fetch('{% url "api:application-list" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    // Show success message
+                    alert('Application submitted successfully!');
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('applyModal'));
+                    modal.hide();
+                    // Reload page to update UI
+                    window.location.reload();
+                } else {
+                    const errorData = await response.json();
+                    alert('Error submitting application: ' + (errorData.detail || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error submitting application. Please try again.');
+            }
+        });
+    });
+</script>
+{% endblock %} 
